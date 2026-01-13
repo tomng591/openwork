@@ -1,3 +1,8 @@
+/**
+ * @license
+ * Copyright 2026 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 import { useRef, useEffect } from 'react';
 
 interface InputAreaProps {
@@ -39,42 +44,51 @@ export function InputArea({
   };
 
   return (
-    <div className="relative">
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
-        disabled={isStreaming}
-        className="w-full resize-none rounded-xl border border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 px-4 py-3 pr-12 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        rows={1}
-      />
+    <div className="relative flex items-end gap-3">
+      <div className="flex-1 relative">
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask Gemini anything..."
+          disabled={isStreaming}
+          className="w-full resize-none rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-3 pr-12 text-neutral-100 placeholder-neutral-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-[15px] leading-relaxed"
+          rows={1}
+        />
+      </div>
 
       {/* Submit/Abort button */}
       <button
         onClick={isStreaming ? onAbort : onSubmit}
         disabled={!isStreaming && !value.trim()}
-        className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${
+        className={`flex-shrink-0 p-3 rounded-xl transition-all ${
           isStreaming
-            ? 'bg-red-500 hover:bg-red-600 text-white'
-            : 'bg-blue-500 hover:bg-blue-600 text-white disabled:bg-neutral-300 disabled:text-neutral-500 dark:disabled:bg-neutral-600'
+            ? 'bg-red-600 hover:bg-red-500 text-white'
+            : value.trim()
+              ? 'bg-blue-600 hover:bg-blue-500 text-white'
+              : 'bg-neutral-700 text-neutral-500 cursor-not-allowed'
         }`}
         title={isStreaming ? 'Stop (Esc)' : 'Send (Enter)'}
       >
         {isStreaming ? (
           // Stop icon
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <rect x="6" y="6" width="12" height="12" rx="1" />
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <rect x="6" y="6" width="12" height="12" rx="2" />
           </svg>
         ) : (
           // Send icon
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+              d="M5 12h14m-7-7l7 7-7 7"
             />
           </svg>
         )}

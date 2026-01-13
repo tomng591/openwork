@@ -2,7 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* macOS-style scrollbars */
+/* Force dark mode */
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%;
+  background-color: rgb(23 23 23); /* neutral-900 */
+  color: rgb(229 229 229); /* neutral-200 */
+}
+
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -13,22 +24,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Draggable title bar region */
@@ -42,5 +43,35 @@
 
 /* Selection styling */
 ::selection {
-  background: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.4);
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid rgb(59 130 246);
+  outline-offset: 2px;
+}
+
+/* Smooth scrolling */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Code blocks in markdown */
+pre code {
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Animation for streaming text */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: '▋';
+  animation: blink 1s infinite;
+  color: rgb(59 130 246);
 }

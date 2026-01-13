@@ -16,11 +16,14 @@
     "package": "electron-builder --mac --config electron-builder.json"
   },
   "dependencies": {
-    "@google/gemini-cli-core": "file:../core"
+    "@google/gemini-cli-core": "file:../core",
+    "react-markdown": "^9.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

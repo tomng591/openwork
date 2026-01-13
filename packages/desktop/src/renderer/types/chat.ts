@@ -1,8 +1,22 @@
+/**
+ * @license
+ * Copyright 2026 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 export interface ToolCall {
   callId: string;
   name: string;
   args?: Record<string, unknown>;
-  status?: 'pending' | 'approved' | 'rejected' | 'executing' | 'success' | 'error';
+  // Status values from CoreToolScheduler
+  status?:
+    | 'pending'
+    | 'validating'
+    | 'awaiting_approval'
+    | 'scheduled'
+    | 'executing'
+    | 'success'
+    | 'error'
+    | 'cancelled';
   result?: unknown;
 }
 
