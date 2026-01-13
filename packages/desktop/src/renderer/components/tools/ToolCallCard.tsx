@@ -1,5 +1,28 @@
+/**
+ * @license
+ * Copyright 2026 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
 import { useState } from 'react';
 import type { ToolCall } from '../../types/chat';
+
+// Format tool result for display
+function formatResult(result: unknown): string {
+  if (result === null || result === undefined) {
+    return 'null';
+  }
+  if (typeof result === 'string') {
+    return result;
+  }
+  if (Array.isArray(result)) {
+    // For file listings, show each item on a new line
+    if (result.every((item) => typeof item === 'string')) {
+      return result.join('\n');
+    }
+  }
+  // For objects, pretty print JSON
+  return JSON.stringify(result, null, 2);
+}
 
 interface ToolCallCardProps {
   toolCall: ToolCall;
@@ -14,75 +37,147 @@ export function ToolCallCard({
   onApprove,
   onReject,
 }: ToolCallCardProps): JSX.Element {
-  const [isExpanded, setIsExpanded] = useState(true);
+  // Collapsed by default, expand when pending approval
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const statusColors = {
-    pending: 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20',
-    approved: 'border-green-500 bg-green-50 dark:bg-green-900/20',
-    rejected: 'border-red-500 bg-red-50 dark:bg-red-900/20',
-    executing: 'border-blue-500 bg-blue-50 dark:bg-blue-900/20',
-    success: 'border-green-500 bg-green-50 dark:bg-green-900/20',
-    error: 'border-red-500 bg-red-50 dark:bg-red-900/20',
+  // Check if tool is truly awaiting user approval (not just pending in general)
+  const isAwaitingApproval =
+    isPending &&
+    (toolCall.status === 'pending' || toolCall.status === 'awaiting_approval');
+
+  // Check if tool is currently executing
+  const isExecuting =
+    toolCall.status === 'executing' || toolCall.status === 'scheduled';
+
+  // Determine status icon and colors
+  const getStatusDisplay = () => {
+    if (isExecuting) {
+      return {
+        icon: (
+          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+        ),
+        label: 'Running',
+        color: 'text-blue-400',
+        bgColor: 'bg-blue-500/10',
+      };
+    }
+    if (toolCall.status === 'success') {
+      return {
+        icon: (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        ),
+        label: 'Completed',
+        color: 'text-green-400',
+        bgColor: 'bg-green-500/10',
+      };
+    }
+    if (toolCall.status === 'error' || toolCall.status === 'cancelled') {
+      return {
+        icon: (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        ),
+        label: toolCall.status === 'cancelled' ? 'Cancelled' : 'Failed',
+        color: 'text-red-400',
+        bgColor: 'bg-red-500/10',
+      };
+    }
+    // Pending approval
+    return {
+      icon: (
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      ),
+      label: 'Awaiting approval',
+      color: 'text-yellow-400',
+      bgColor: 'bg-yellow-500/10',
+    };
   };
 
-  const status = isPending
-    ? 'pending'
-    : toolCall.status || 'success';
+  const status = getStatusDisplay();
+
+  // Get a friendly tool name
+  const getToolDisplayName = (name: string) => {
+    const nameMap: Record<string, string> = {
+      list_directory: 'Listing directory',
+      read_file: 'Reading file',
+      write_file: 'Writing file',
+      run_command: 'Running command',
+      search_files: 'Searching files',
+      edit_file: 'Editing file',
+    };
+    return nameMap[name] || name.replace(/_/g, ' ');
+  };
 
   return (
-    <div
-      className={`rounded-lg border-l-4 ${statusColors[status]} overflow-hidden`}
-    >
+    <div className="my-3 rounded-lg bg-neutral-800/50 border border-neutral-700/50 overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-neutral-700/30 transition-colors"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {/* Tool icon */}
-          <div className="p-1 rounded bg-neutral-200 dark:bg-neutral-700">
-            <svg
-              className="w-4 h-4 text-neutral-600 dark:text-neutral-300"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
+          <div className={`p-1.5 rounded ${status.bgColor} ${status.color}`}>
+            {status.icon}
           </div>
 
-          <span className="font-medium text-sm text-neutral-700 dark:text-neutral-200">
-            {toolCall.name}
-          </span>
-
-          {/* Status badge */}
-          <span
-            className={`text-xs px-2 py-0.5 rounded-full ${
-              isPending
-                ? 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'
-                : 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200'
-            }`}
-          >
-            {isPending ? 'Awaiting approval' : toolCall.status || 'Completed'}
+          <span className="font-medium text-neutral-200">
+            {getToolDisplayName(toolCall.name)}
           </span>
         </div>
 
         {/* Expand/collapse icon */}
         <svg
-          className={`w-4 h-4 text-neutral-400 transition-transform ${
-            isExpanded ? 'rotate-180' : ''
-          }`}
+          className={`w-5 h-5 text-neutral-400 transition-transform ${isExpanded ? '' : '-rotate-90'}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -98,37 +193,47 @@ export function ToolCallCard({
 
       {/* Content */}
       {isExpanded && (
-        <div className="px-3 pb-3 space-y-3">
-          {/* Arguments */}
-          {toolCall.args && (
-            <pre className="text-xs bg-neutral-100 dark:bg-neutral-800 rounded p-2 overflow-x-auto">
-              {JSON.stringify(toolCall.args, null, 2)}
+        <div className="px-4 pb-4 space-y-3">
+          {/* Request section */}
+          <div className="space-y-2">
+            <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">
+              Request
+            </span>
+            <pre className="text-sm bg-neutral-900/50 rounded-lg p-3 overflow-x-auto text-neutral-300 font-mono">
+              {JSON.stringify(toolCall.args || {}, null, 2)}
             </pre>
-          )}
+          </div>
 
-          {/* Result */}
-          {toolCall.result && (
-            <div className="text-sm text-neutral-600 dark:text-neutral-300">
-              <pre className="bg-neutral-100 dark:bg-neutral-800 rounded p-2 overflow-x-auto whitespace-pre-wrap">
-                {typeof toolCall.result === 'string'
-                  ? toolCall.result
-                  : JSON.stringify(toolCall.result, null, 2)}
+          {/* Response section */}
+          {toolCall.result !== undefined && (
+            <div className="space-y-2">
+              <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">
+                Response
+              </span>
+              <pre className="text-sm bg-neutral-900/50 rounded-lg p-3 overflow-x-auto text-neutral-300 font-mono whitespace-pre-wrap max-h-64 overflow-y-auto">
+                {formatResult(toolCall.result)}
               </pre>
             </div>
           )}
 
-          {/* Approval buttons */}
-          {isPending && (
+          {/* Approval buttons - only show when truly awaiting approval */}
+          {isAwaitingApproval && (
             <div className="flex gap-2 pt-2">
               <button
-                onClick={onApprove}
-                className="flex-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-md transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onApprove();
+                }}
+                className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors border border-green-500"
               >
                 Approve
               </button>
               <button
-                onClick={onReject}
-                className="flex-1 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-md transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReject();
+                }}
+                className="flex-1 px-4 py-2.5 bg-neutral-700 hover:bg-neutral-600 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 Reject
               </button>
